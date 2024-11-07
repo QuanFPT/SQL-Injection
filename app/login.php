@@ -1,23 +1,33 @@
 <?php
+session_start();
 require 'config.php';
 
-// Kiểm tra nếu người dùng đã gửi thông tin đăng nhập
-if (isset($_POST['username']) && isset($_POST['password'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    // Câu truy vấn không an toàn (có lỗ hổng SQL Injection)
-    $query = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
-    var_dump($query);
-    $stmt = $pdo->query($query);
-    // Kiểm tra nếu có kết quả trả về
-    if ($stmt->rowCount() > 0) {
-        echo "Đăng nhập thành công!";
+    // Thực hiện truy vấn kiểm tra tài khoản
+    // $query = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
+    // $stmt = $pdo->query($query);
+    // $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $query = "SELECT * FROM users WHERE username = :username AND password = :password";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute([
+        ':username' => $username,
+        ':password' => $password
+    ]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user) {
+        // Lưu thông tin người dùng vào session
+        $_SESSION['user_id'] = $user['id'];
+        header("Location: /profile.php");
+        exit;
     } else {
         echo "Sai tên đăng nhập hoặc mật khẩu!";
     }
-} else {
-    // Chuyển về form đăng nhập nếu chưa gửi thông tin
-    require 'views/login_form.php';
 }
+require 'views/login_form.php';
+
 ?>
